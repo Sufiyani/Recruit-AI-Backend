@@ -1,0 +1,250 @@
+// This is your Prisma schema file
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  SUPER_ADMIN
+  COMPANY_ADMIN
+  CANDIDATE
+}
+
+enum JobStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+  REMOTE
+  HYBRID
+}
+
+enum ApplicationStatus {
+  PENDING
+  REVIEWING
+  SHORTLISTED
+  REJECTED
+}
+
+enum InterviewStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+  APPLICATION
+  INTERVIEW
+  JOB
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  firstName     String
+  lastName      String
+  role          UserRole  @default(CANDIDATE)
+  isActive      Boolean   @default(true)
+  emailVerified Boolean   @default(false)
+  avatarUrl     String?
+  phone         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  company          Company?          @relation("CompanyAdmin", fields: [companyId], references: [id])
+  companyId        String?
+  candidateProfile CandidateProfile?
+  createdJobs      Job[]             @relation("JobCreator")
+  notifications    Notification[]
+  refreshTokens    RefreshToken[]
+
+  @@map("users")
+}
+
+model Company {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  logoUrl     String?
+  website     String?
+  industry    String?
+  size        String?
+  description String?
+  address     String?
+  country     String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Company settings stored as JSON for flexibility
+  settings    Json     @default("{}")
+
+  // Relations
+  users User[] @relation("CompanyAdmin")
+  jobs  Job[]  @relation("CompanyJobs")
+
+  @@map("companies")
+}
+
+model Job {
+  id           String    @id @default(uuid())
+  title        String
+  slug         String    @unique
+  description  String
+  requirements String?
+  benefits     String?
+  location     String?
+  type         JobType   @default(FULL_TIME)
+  salaryMin    Int?
+  salaryMax    Int?
+  currency     String?   @default("USD")
+  status       JobStatus @default(DRAFT)
+  deadline     DateTime?
+  openings     Int       @default(1)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  company     Company       @relation("CompanyJobs", fields: [companyId], references: [id], onDelete: Cascade)
+  companyId   String
+  createdBy   User          @relation("JobCreator", fields: [createdById], references: [id])
+  createdById String
+  applications Application[]
+
+  @@index([companyId])
+  @@index([status])
+  @@map("jobs")
+}
+
+model CandidateProfile {
+  id           String   @id @default(uuid())
+  headline     String?
+  bio          String?
+  skills       String[] @default([])
+  experience   Json?    // Array of experience objects
+  education    Json?    // Array of education objects
+  resumeUrl    String?
+  resumeName   String?
+  portfolioUrl String?
+  linkedinUrl  String?
+  githubUrl    String?
+  location     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String       @unique
+  applications Application[]
+
+  @@map("candidate_profiles")
+}
+
+model Application {
+  id          String            @id @default(uuid())
+  status      ApplicationStatus @default(PENDING)
+  coverLetter String?
+  notes       String?           // HR internal notes
+  resumeUrl   String?
+  resumeName  String?
+  aiScore     Float?
+  aiSummary   String?
+  aiFeedback  Json?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // Relations
+  job              Job              @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  jobId            String
+  candidate        CandidateProfile @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  candidateId      String
+  interviews       Interview[]
+
+  @@unique([jobId, candidateId])  // One application per job per candidate
+  @@index([jobId])
+  @@index([candidateId])
+  @@index([status])
+  @@map("applications")
+}
+
+model Interview {
+  id          String          @id @default(uuid())
+  title       String          @default("Interview")
+  scheduledAt DateTime
+  duration    Int             @default(60) // minutes
+  meetingLink String?
+  meetingId   String?
+  status      InterviewStatus @default(SCHEDULED)
+  notes       String?
+  feedback    String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // Stub fields for AI Phase 2
+  aiQuestions Json?           // AI-generated questions (Phase 2)
+  aiSummary   String?         // AI interview summary (Phase 2)
+  aiScore     Float?          // AI candidate score (Phase 2)
+  recordingUrl String?        // Interview recording URL (Phase 2)
+
+  // Relations
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId String
+
+  @@index([applicationId])
+  @@map("interviews")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  title     String
+  message   String
+  type      NotificationType @default(INFO)
+  read      Boolean          @default(false)
+  link      String?          // Optional deep link
+  metadata  Json?            // Extra data for AI notifications (Phase 2)
+  createdAt DateTime         @default(now())
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  @@index([userId])
+  @@index([read])
+  @@map("notifications")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
