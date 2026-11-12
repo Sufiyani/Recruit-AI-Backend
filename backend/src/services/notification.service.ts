@@ -1,4 +1,5 @@
 import { prisma } from '../config/database';
+import { Prisma } from '@prisma/client';
 import { NotificationType } from '@prisma/client';
 
 interface CreateNotificationData {
@@ -19,7 +20,7 @@ export class NotificationService {
         message: data.message,
         type: data.type || NotificationType.INFO,
         link: data.link,
-        metadata: data.metadata,
+        metadata: data.metadata as Prisma.InputJsonValue | undefined,
       },
     });
   }

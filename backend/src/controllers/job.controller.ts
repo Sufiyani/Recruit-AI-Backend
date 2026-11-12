@@ -13,28 +13,28 @@ export const jobController = {
 
   async update(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const job = await jobService.updateJob(req.params.id, req.body, req.user!.companyId!);
+      const job = await jobService.updateJob(req.params.id as string, req.body, req.user!.companyId!);
       res.json(formatApiResponse(job, 'Job updated'));
     } catch (error) { next(error); }
   },
 
   async delete(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      await jobService.deleteJob(req.params.id, req.user!.companyId!);
+      await jobService.deleteJob(req.params.id as string, req.user!.companyId!);
       res.json(formatApiResponse(null, 'Job deleted'));
     } catch (error) { next(error); }
   },
 
   async togglePublish(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const job = await jobService.togglePublish(req.params.id, req.user!.companyId!);
+      const job = await jobService.togglePublish(req.params.id as string, req.user!.companyId!);
       res.json(formatApiResponse(job, 'Job status updated'));
     } catch (error) { next(error); }
   },
 
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
-      const job = await jobService.getJobById(req.params.id);
+      const job = await jobService.getJobById(req.params.id as string);
       res.json(formatApiResponse(job, 'Job fetched'));
     } catch (error) { next(error); }
   },

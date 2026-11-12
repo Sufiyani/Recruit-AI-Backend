@@ -36,14 +36,14 @@ export const dashboardController = {
 export const companyController = {
   async getCompany(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const company = await companyService.getCompany(req.params.id || req.user!.companyId!);
+      const company = await companyService.getCompany((req.params.id as string) || req.user!.companyId!);
       res.json(formatApiResponse(company, 'Company fetched'));
     } catch (error) { next(error); }
   },
 
   async updateCompany(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const company = await companyService.updateCompany(req.params.id, req.user!.companyId!, req.body);
+      const company = await companyService.updateCompany(req.params.id as string, req.user!.companyId!, req.body);
       res.json(formatApiResponse(company, 'Company updated'));
     } catch (error) { next(error); }
   },

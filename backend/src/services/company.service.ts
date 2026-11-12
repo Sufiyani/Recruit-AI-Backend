@@ -1,4 +1,5 @@
 import { prisma } from '../config/database';
+import { Prisma } from '@prisma/client';
 import { NotFoundError, ForbiddenError } from '../utils/errors';
 
 export class CompanyService {
@@ -35,7 +36,7 @@ export class CompanyService {
   async updateSettings(companyId: string, settings: Record<string, unknown>) {
     return prisma.company.update({
       where: { id: companyId },
-      data: { settings },
+      data: { settings: settings as Prisma.InputJsonValue },
       select: { settings: true },
     });
   }

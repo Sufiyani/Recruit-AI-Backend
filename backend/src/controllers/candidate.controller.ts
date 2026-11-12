@@ -49,7 +49,7 @@ export const candidateController = {
 
   async getCandidateById(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const candidate = await candidateService.getCandidateById(req.params.id, req.user!.companyId!);
+      const candidate = await candidateService.getCandidateById(req.params.id as string, req.user!.companyId!);
       res.json(formatApiResponse(candidate, 'Candidate fetched'));
     } catch (error) { next(error); }
   },
